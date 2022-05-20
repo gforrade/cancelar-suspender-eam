@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:cxf="http://camel.apache.org/schema/cxf"
+	   xmlns:camelcxf="http://camel.apache.org/schema/blueprint/cxf"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:sec="http://cxf.apache.org/configuration/security"
+	   xmlns:http-conf="http://cxf.apache.org/transports/http/configuration"
+	   xmlns:http="http://cxf.apache.org/transports/http/configuration"
+	   xmlns:cxf-core="http://cxf.apache.org/core"
+	   xsi:schemaLocation="
+	    http://cxf.apache.org/configuration/security
+	    http://cxf.apache.org/schemas/configuration/security.xsd
+	    http://cxf.apache.org/transports/http/configuration
+	    http://cxf.apache.org/schemas/configuration/http-conf.xsd
+    	http://cxf.apache.org/core http://cxf.apache.org/schemas/core.xsd
+    	http://www.springframework.org/schema/beans      
+    	http://www.springframework.org/schema/beans/spring-beans.xsd      
+    	http://camel.apache.org/schema/spring 
+    	http://camel.apache.org/schema/spring/camel-spring.xsd      
+    	http://camel.apache.org/schema/cxf 
+    	http://camel.apache.org/schema/cxf/camel-cxf-2.8.3.xsd">
+
+
+	<cxf-core:bus>
+<!--		<cxf-core:features>-->
+<!--			<cxf-core:logging />-->
+<!--		</cxf-core:features>-->
+	</cxf-core:bus>
+
+  
+ 
+	<bean id="authenticationInterceptor" class="ar.com.edenor.ocp.security.RestSecurityInterceptor">
+		<property name="kClient" ref="keycloakClient"/>
+	</bean>
+
+	<bean id="keycloakClient" class="ar.com.edenor.ocp.security.KeycloakClient" scope="singleton" init-method="init"/>
+
+	<bean id="jsonProvider" class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider" />
+
+
+	<bean id="requestIdGeneratorBean" class="ar.com.edenor.ocp.idgenerator.RequestIdGeneratorBean" />
+
+	<bean id="myLoggingInInterceptor" class="ar.com.edenor.ocp.logging.MyLoggingInInterceptor"/>
+	<bean id="myLoggingOutInterceptor" class="ar.com.edenor.ocp.logging.MyLoggingOutInterceptor"/>
+	<bean id="restPreInvokeInterceptor" class="ar.com.edenor.ocp.interceptors.RestPreInvokeInterceptor">
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+		<property name="endPointAddress" value="${edenor.integration.name}"/>
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+		<property name="requestIdGeneratorBean" ref="requestIdGeneratorBean"/>
+	</bean>
+	<bean id="restPostInvokeInterceptor" class="ar.com.edenor.ocp.interceptors.RestPostInvokeInterceptor">
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+		<property name="endPointAddress" value="${edenor.integration.name}"/>
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+	</bean>
+	<bean id="soapInPreInvokeInterceptor" class="ar.com.edenor.ocp.interceptors.SoapInPreInvokeInterceptor">
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+		<property name="requestIdGeneratorBean" ref="requestIdGeneratorBean"/>
+	</bean>
+	<bean id="soapInPostInvokeInterceptor" class="ar.com.edenor.ocp.interceptors.SoapInPostInvokeInterceptor">
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+		<property name="requestIdGeneratorBean" ref="requestIdGeneratorBean"/>
+	</bean>
+	<bean id="soapPreInvokeInterceptor" class="ar.com.edenor.ocp.interceptors.SoapPreInvokeInterceptor">
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+		<property name="requestIdGeneratorBean" ref="requestIdGeneratorBean"/>
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+	</bean>
+	<bean id="soapPostInvokeInterceptor" class="ar.com.edenor.ocp.interceptors.SoapPostInvokeInterceptor">
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+	</bean>
+	<bean id="soapInFaultSoapInterceptor" class="ar.com.edenor.ocp.interceptors.SoapInFaultSoapInterceptor" />
+	<bean id="soapOutFaultSoapInterceptor" class="ar.com.edenor.ocp.interceptors.SoapOutFaultSoapInterceptor" />
+
+
+	<bean id="setWebServiceParameterProcessor"	class="ar.com.edenor.ocp.processors.SetWebServiceParameterProcessor" />
+	<bean id="setWebServiceResponseProcessor"	class="ar.com.edenor.ocp.processors.SetWebServiceResponseProcessor" />
+
+	<bean id="exceptionHandler" class="ar.com.edenor.ocp.exceptions.ExceptionHandler">
+	</bean>
+	<bean id="unrecognizedPropertyExceptionMapper"	class="ar.com.edenor.ocp.exceptions.UnrecognizedPropertyExceptionMapper" >
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+		<property name="endPointAddress" value="${edenor.integration.name}"/>
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+	</bean>
+	<bean id="mismatchedInputExceptionMapper"	class="ar.com.edenor.ocp.exceptions.MismatchedInputExceptionMapper" >
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+		<property name="endPointAddress" value="${edenor.integration.name}"/>
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+	</bean>
+
+	<bean id="securityHandler" class="ar.com.edenor.ocp.security.EdenorAuthorizingFilter">
+		<property name="interceptor" ref="authenticationInterceptor"/>
+		<property name="edenorIntegrationName" value="${edenor.integration.name}"/>
+		<property name="sourceSystem" value="${edenor.source.system}"/>
+	</bean>
+
+
+	<bean id="debugProcessor" class="ar.com.edenor.ocp.processors.DebugProcessor" />
+
+	<cxf:cxfEndpoint id="cancelsuspendWorkOrderEndpoint"
+					 serviceClass="overit.geocallwfm.integration.workorders.cancelsuspendworkorder.CancelSuspendWorkOrder"
+					 address="${endpoint.cancelsuspendWorkOrder.address}"
+					 wsdlURL="wsdl/CancelSuspendWorkOrder_v1.wsdl"
+					 loggingFeatureEnabled="false">
+		<cxf:properties>
+			<entry key="dataFormat" value="POJO"/>
+			<entry key="wrapped" value="true"/>
+		</cxf:properties>
+
+		<cxf:inInterceptors>
+			<ref bean="myLoggingInInterceptor"/>
+			<ref bean="soapPostInvokeInterceptor"/>
+		</cxf:inInterceptors>
+		<cxf:outInterceptors>
+			<ref bean="soapPreInvokeInterceptor"/>
+			<ref bean="myLoggingOutInterceptor"/>
+		</cxf:outInterceptors>
+		<cxf:inFaultInterceptors>
+			<ref bean="soapInFaultSoapInterceptor"/>
+		</cxf:inFaultInterceptors>
+		<cxf:outFaultInterceptors>
+			<ref bean="soapOutFaultSoapInterceptor"/>
+		</cxf:outFaultInterceptors>
+	</cxf:cxfEndpoint>
+
+	<cxf:rsServer id="cancelarSuspenderEndpoint"
+				  address="/"
+				  serviceClass="ar.com.edenor.ocp.api.CancelarSuspenderResource"
+				  loggingFeatureEnabled="false">
+		<cxf:providers>
+			<bean class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider"/>
+			<ref bean="unrecognizedPropertyExceptionMapper"/>
+			<ref bean="mismatchedInputExceptionMapper"/>
+			<ref bean="securityHandler"/>
+		</cxf:providers>
+		<cxf:properties>
+			<entry key="default.wae.mapper.least.specific" value="true"/>
+		</cxf:properties>
+		<cxf:inInterceptors>
+			<ref bean="myLoggingInInterceptor"/>
+			<ref bean="restPreInvokeInterceptor"/>
+		</cxf:inInterceptors>
+		<cxf:outInterceptors>
+			<ref bean="myLoggingOutInterceptor"/>
+			<ref bean="restPostInvokeInterceptor"/>
+		</cxf:outInterceptors>
+	</cxf:rsServer>
+
+	<!-- ======================================== CXF SOAP client endpoint ======================================== -->
+	<!-- Timeout configuration for CXF endpoint -->
+	<!-- Timeout value is hardcoded (to 1 minute) due to a bug in Spring or Cxf - the schema validation is done before -->
+	<!-- replacing the property's value -->
+
+	<http:conduit name="*.http-conduit">
+		<http:tlsClientParameters secureSocketProtocol="SSL" useHttpsURLConnectionDefaultSslSocketFactory="true" disableCNCheck="${disableHostnameCheck}">
+		</http:tlsClientParameters>
+		<http:client AutoRedirect="true" Connection="Keep-Alive"
+					 ReceiveTimeout="${connectionTimeout}" ConnectionTimeout="${connectionTimeout}"  />
+		<http:authorization>
+			<sec:UserName>${service.fsm.user}</sec:UserName>
+			<sec:Password>${service.fsm.password}</sec:Password>
+			<sec:AuthorizationType>Basic</sec:AuthorizationType>
+		</http:authorization>
+	</http:conduit>
+
+
+	<camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+
+		<dataFormats>
+			<json id="json" prettyPrint="true" library="Jackson"/>
+		</dataFormats>
+
+		<onException>
+			<exception>java.lang.Exception</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal>
+ 
+ 			<!-- log excepcion -->
+			<to id="exception" uri="bean:exceptionHandler?method=exception"/>
+
+		</onException>
+
+		<onException>
+			<exception>java.net.SocketTimeoutException</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal> 
+			<to id="socketTimeoutException" uri="bean:exceptionHandler?method=connectException"/>
+		</onException>
+		<onException>
+			<exception>java.net.ConnectException</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal> 
+			<to id="connectException" uri="bean:exceptionHandler?method=connectException"/>
+		</onException>
+		<onException>
+			<exception>java.net.SocketException</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal> 
+			<to id="socketException" uri="bean:exceptionHandler?method=connectException"/>
+		</onException>
+		<onException>
+			<exception>java.net.UnknownHostException</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal> 
+			<to id="unknownHostException" uri="bean:exceptionHandler?method=connectException"/>
+		</onException>
+
+		<onException>
+			<exception>org.apache.cxf.transport.http.HTTPException</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal> 
+			<to id="HTTPException" uri="bean:exceptionHandler?method=HTTPException"/>
+		</onException>
+
+		<onException>
+			<exception>org.apache.cxf.binding.soap.SoapFault</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal> 
+			<to id="SoapFault" uri="bean:exceptionHandler?method=SoapFault"/>
+		</onException>
+
+		<onException>
+			<exception>ar.com.edenor.ocp.exceptions.ValidationException</exception>
+			<handled>
+				<constant>true</constant>
+			</handled>
+			<marshal>
+				<custom ref="json"/>
+			</marshal>
+ 
+			<to id="validationException" uri="bean:exceptionHandler?method=validationException"/>
+
+		</onException>
+
+
+		<route id="rutaPrincipal">
+				<from uri="cxfrs:bean:cancelarSuspenderEndpoint?bindingStyle=SimpleConsumer&amp;bridgeErrorHandler=true"/>
+				<log message="[${header.operationName}] Received request ..."/>
+				<recipientList>
+					<simple>direct:${header.operationName}</simple>
+				</recipientList>
+		</route>
+
+		<route id="deleteId">
+			<from uri="direct:delete"/>
+			<setProperty propertyName="CANCEL_SUSPENDER_REQUEST">
+				<simple>${body}</simple>
+			</setProperty>
+			<process ref="setWebServiceParameterProcessor" />
+
+			<to uri="cxf:bean:cancelsuspendWorkOrderEndpoint"/>
+
+			<process ref="setWebServiceResponseProcessor" />
+		</route>
+
+
+	</camelContext>
+
+</beans>

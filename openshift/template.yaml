@@ -1,0 +1,221 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: edenor-fsm-cancelarsuspender-tarea-eam
+objects:
+  - apiVersion: v1
+    kind: ImageStream
+    metadata:
+      name: ${PARAM_IMAGE_NAME}
+  - apiVersion: v1
+    kind: BuildConfig
+    metadata:
+      labels:
+        app: ${PARAM_APP_NAME}
+      name: ${PARAM_APP_NAME}
+    spec:
+      selector:
+        deploymentConfig: ${PARAM_APP_NAME}
+      runPolicy: Serial
+      source:
+        type: Binary
+      strategy:
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            name: redhat-openjdk18-openshift:1.2
+            namespace: openshift
+      output:
+        to:
+          kind: ImageStreamTag
+          name: ${PARAM_IMAGE_NAME}:latest
+  - apiVersion: v1
+    kind: DeploymentConfig
+    metadata:
+      labels:
+        app: ${PARAM_APP_NAME}
+      name: ${PARAM_APP_NAME}
+    spec:
+      selector:
+        deploymentConfig: ${PARAM_APP_NAME}
+      template:
+        metadata:
+          labels:
+            deploymentConfig: ${PARAM_APP_NAME}
+            name: ${PARAM_APP_NAME}
+            environment: dev
+            tier: backend
+            frecuencia: on-demand
+            mensajeEntrada: rest
+            critico: "si"
+            protocolo: https
+            asincronico: "no"
+        spec:
+          containers:
+            - name: ${PARAM_APP_NAME}
+              env:
+                - name: TZ
+                  value: America/Argentina/Buenos_Aires
+                - name: JAVA_OPTIONS
+                  value: >-
+                    -Dext.properties.file=file:/opt/config/application.properties
+                    -Djavax.net.ssl.trustStore=/tmp/src/classes/certs/ssocert.jks
+                    -Djavax.net.ssl.trustStorePassword=edenor
+                - name: SERVICE_FSM_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: service.fsm.password
+                      name: edenor-service-fsm
+                - name: SERVICE_FSM_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: service.fsm.user
+                      name: edenor-service-fsm
+              image: ${PARAM_IMAGE_NAME}:latest
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+                - containerPort: 8081
+                  protocol: TCP
+              readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /actuator/health
+                  port: 8081
+                  scheme: HTTP
+                initialDelaySeconds: 160
+                periodSeconds: 90
+                successThreshold: 1
+                timeoutSeconds: 120
+              livenessProbe:
+                failureThreshold: 3
+                httpGet:
+                  path: /actuator/health
+                  port: 8081
+                  scheme: HTTP
+                initialDelaySeconds: 120
+                periodSeconds: 10
+                successThreshold: 1
+                timeoutSeconds: 120
+              resources:
+                limits:
+                  cpu: 300m
+                  memory: 512Mi
+                requests:
+                  cpu: 50m
+                  memory: 512Mi
+              volumeMounts:
+                - mountPath: /opt/config
+                  name: ${PARAM_APP_NAME}-config-vol
+                - mountPath: /opt/secret/fsm
+                  name: edenor-service-fsm
+          volumes:
+            - name: edenor-service-fsm
+              secret:
+                defaultMode: 420
+                secretName: edenor-service-fsm
+            - configMap:
+                defaultMode: 420
+                name: ${PARAM_APP_NAME}-config
+              name: ${PARAM_APP_NAME}-config-vol
+      triggers: []
+      replicas: 1
+      strategy:
+        type: Rolling
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: ${PARAM_APP_NAME}
+      name: ${PARAM_APP_NAME}
+    spec:
+      ports:
+        - port: 8080
+          protocol: TCP
+          targetPort: 8080
+      selector:
+        deploymentConfig: ${PARAM_APP_NAME}
+      sessionAffinity: None
+      type: ClusterIP
+  - apiVersion: v1
+    kind: Route
+    metadata:
+      labels:
+        app: ${PARAM_APP_NAME}
+      name: ${PARAM_APP_NAME}
+    spec:
+      tls:
+        termination: edge
+      to:
+        kind: Service
+        name: ${PARAM_APP_NAME}
+        weight: 100
+      wildcardPolicy: None
+  - apiVersion: v1
+    data:
+      application.properties: |-
+        server.contextPath=/
+        cxf.path=/service
+        edenor.integration.name=edenor-fsm-cancelarsuspender-tarea-eam
+
+        logging.config=classpath:logback.xml
+
+        # the options from org.apache.camel.spring.boot.CamelConfigurationProperties can be configured here
+        camel.springboot.name=eps-rest-services
+
+        # lets listen on all ports to ensure we can be invoked from the pod IP
+        server.address=0.0.0.0
+        management.address=0.0.0.0
+
+        # lets use a different management port in case you need to listen to HTTP requests on 8080
+        management.server.port=8081
+        management.endpoint.health.probes.enabled=true
+        management.endpoints.web.exposure.include=health,info
+        management.security.enabled=false
+
+        # disable all management enpoints except health
+        endpoints.enabled = true
+        endpoints.health.enabled = true
+
+
+        #WebService
+        #endpoint.cancelsuspendWorkOrder.address=https://edenor-test.geocall.cloud/edenor/w/cxf/CancelSuspendWorkOrder
+        endpoint.cancelsuspendWorkOrder.address=https://edenor-trng.geocall.cloud/edenor/w/cxf/CancelSuspendWorkOrder
+        endpoint.cancelsuspendWorkOrder.wsdlURL=wsdl/CancelSuspendWorkOrder_v1.wsdl
+
+        service.fsm.user=integracion
+        service.fsm.password=Edenor#2021
+
+        #----SERVICES----#
+
+        #SSL
+        disableHostnameCheck=true
+        keystoreLocation=src/jks/keystore.jks
+        keystorePassword=Abcd1234
+        connectionTimeout=60000
+
+        #---- Key Cloak ----#
+        edenor.keycloak.enabled=true
+        edenor.keycloak.realm=Edenor-dev-eam-realm
+        edenor.keycloak.auth-server-url=https://sso-sso-rh.prod-apps.pro.edenor/auth
+        edenor.keycloak.connect-timeout = 5000
+        edenor.keycloak.roles=EAM_FSM
+
+        OrigenRequestIdGenerator.origen=eam
+        edenor.source.system=SAP
+        edenor.integration.type=ONLINE
+
+    kind: ConfigMap
+    metadata:
+      name: ${PARAM_APP_NAME}-config
+parameters:
+  - description: The application name
+    displayName: Application name
+    name: PARAM_APP_NAME
+    value: edenor-fsm-cancelarsuspender-tarea-eam
+    required: true
+  - description: The image name
+    displayName: Image name
+    name: PARAM_IMAGE_NAME
+    value: edenor-fsm-cancelarsuspender-tarea-eam
+    required: true

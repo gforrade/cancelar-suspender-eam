@@ -1,0 +1,119 @@
+<?xml version='1.0' encoding='UTF-8'?><wsdl:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:overit:geocallwfm:integration:workorders:CancelSuspendWorkOrder" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:ns1="http://schemas.xmlsoap.org/soap/http" name="CancelSuspendWorkOrder" targetNamespace="urn:overit:geocallwfm:integration:workorders:CancelSuspendWorkOrder">
+  <wsdl:types>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:overit:geocallwfm:integration:workorders:CancelSuspendWorkOrder" xmlns:ns1="urn:overit:geocallwfm:integration:workorders" elementFormDefault="unqualified" targetNamespace="urn:overit:geocallwfm:integration:workorders:CancelSuspendWorkOrder" version="1.0">
+
+  <xs:import namespace="urn:overit:geocallwfm:integration:workorders"/>
+
+  <xs:element name="cancelSuspend" type="tns:cancelSuspend"/>
+
+  <xs:element name="cancelSuspendResponse" type="tns:cancelSuspendResponse"/>
+
+  <xs:complexType name="cancelSuspend">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="request" type="ns1:workOrderCancelSuspendRequest"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="cancelSuspendResponse">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="return" type="ns1:workOrderCancelSuspendResponse"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:overit:geocallwfm:integration:workorders" xmlns:ns1="urn:overit:geocallwfm:integration:commons" targetNamespace="urn:overit:geocallwfm:integration:workorders" version="1.0">
+
+  <xs:import namespace="urn:overit:geocallwfm:integration:commons"/>
+
+  <xs:complexType name="workOrderCancelSuspendRequest">
+    <xs:complexContent>
+      <xs:extension base="ns1:serviceRequest">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="payload" nillable="true" type="tns:workOrderCancelSuspendRequestPayload"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="workOrderCancelSuspendRequestPayload">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="externalCodeWO" nillable="true" type="xs:string"/>
+      <xs:element minOccurs="0" name="operationType" nillable="true" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="workOrderCancelSuspendResponse">
+    <xs:complexContent>
+      <xs:extension base="ns1:serviceResponse">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:overit:geocallwfm:integration:commons" targetNamespace="urn:overit:geocallwfm:integration:commons" version="1.0">
+
+  <xs:complexType name="serviceRequest">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="header" nillable="true" type="tns:requestHeader"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="requestHeader">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="requestId" nillable="true" type="xs:string"/>
+      <xs:element minOccurs="0" name="sourceSystem" nillable="true" type="xs:string"/>
+      <xs:element minOccurs="0" name="language" nillable="true" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="serviceResponse">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="header" nillable="true" type="tns:responseHeader"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="responseHeader">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="status" nillable="true" type="xs:string"/>
+      <xs:element minOccurs="0" name="errorCode" nillable="true" type="xs:string"/>
+      <xs:element minOccurs="0" name="errorDescription" nillable="true" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>
+  </wsdl:types>
+  <wsdl:message name="cancelSuspendResponse">
+    <wsdl:part element="tns:cancelSuspendResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="cancelSuspend">
+    <wsdl:part element="tns:cancelSuspend" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="CancelSuspendWorkOrder">
+    <wsdl:operation name="cancelSuspend">
+      <wsdl:input message="tns:cancelSuspend" name="cancelSuspend">
+    </wsdl:input>
+      <wsdl:output message="tns:cancelSuspendResponse" name="cancelSuspendResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="CancelSuspendWorkOrderSoapBinding" type="tns:CancelSuspendWorkOrder">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="cancelSuspend">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="cancelSuspend">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="cancelSuspendResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="CancelSuspendWorkOrder">
+    <wsdl:port binding="tns:CancelSuspendWorkOrderSoapBinding" name="CancelSuspendWorkOrderImplPort">
+      <soap:address location="http://localhost:8080/edenor/cxf/CancelSuspendWorkOrder"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
